@@ -46,6 +46,7 @@
   }
   function parseInline(markdown) {
     var _a, _b;
+    if (isVisualBlank(markdown)) return [{ text: " " }];
     const segments = [];
     const linkPattern = /(!?)\[([^\]]*)\]\(((?:<[^>\n]+>)|(?:\\.|[^()\s]|\([^()\s]*\))+)(?:\s+['"][^'"]*['"])?\)/g;
     let cursor = 0;
@@ -201,6 +202,7 @@
   var { h, AutoLayout, Frame, Image, Rectangle, Span, Text, useSyncedState, useWidgetNodeId } = widget;
   var CONTENT_WIDTH = 720;
   var CANVAS_NODE_BUDGET = 360;
+  var CANVAS_FONT_FAMILY = "Noto Sans SC";
   var WIDGET_SCHEMA_VERSION = 3;
   var DOCUMENT_FILE_KEY_DATA = "md-block-figma-file-key-v1";
   var suppressEditorOpenUntil = 0;
@@ -289,7 +291,7 @@
   }
   function renderInlineText(segments, key, props, maxWidth = CONTENT_WIDTH) {
     if (!segments.some((segment) => figmaNodeIdFromHref(segment.href))) {
-      return h(Text, __spreadProps(__spreadValues({}, props), { key }), renderInline(segments, key));
+      return h(Text, __spreadProps(__spreadValues({ fontFamily: CANVAS_FONT_FAMILY }, props), { key }), renderInline(segments, key));
     }
     const _a = props, { width, key: _ignoredKey } = _a, segmentProps = __objRest(_a, ["width", "key"]);
     const horizontalAlign = props.horizontalAlignText === "right" ? "end" : props.horizontalAlignText === "center" ? "center" : "start";
@@ -314,7 +316,9 @@
         } : segment.href ? { href: segment.href } : {};
         return h(
           Text,
-          __spreadProps(__spreadValues(__spreadValues(__spreadValues({}, segmentProps), linkStyle), interaction), {
+          __spreadProps(__spreadValues(__spreadValues(__spreadValues({
+            fontFamily: CANVAS_FONT_FAMILY
+          }, segmentProps), linkStyle), interaction), {
             key: `${key}-${index}`,
             width: "hug-contents",
             maxWidth
@@ -451,7 +455,7 @@
           AutoLayout,
           { key, width: "fill-parent", spacing: 8, verticalAlignItems: "start" },
           [
-            h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: "155%", fill: "#737373" }, "\u2022"),
+            h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: "155%", fill: "#737373" }, "\u2022"),
             renderInlineText(block.inline, `${key}-text`, { width: "fill-parent", fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 24)
           ]
         );
@@ -460,7 +464,7 @@
           AutoLayout,
           { key, width: "fill-parent", spacing: 8, verticalAlignItems: "start" },
           [
-            h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: "155%", fill: "#737373" }, `${block.order}.`),
+            h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: "155%", fill: "#737373" }, `${block.order}.`),
             renderInlineText(block.inline, `${key}-text`, { width: "fill-parent", fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 32)
           ]
         );
@@ -520,7 +524,7 @@
           return h(
             AutoLayout,
             { key, width: "fill-parent", padding: 12, fill: "#FAFAFA", cornerRadius: 6 },
-            h(Text, { fontSize: 12, fill: "#A3A3A3" }, `\u56FE\u7247\u9644\u4EF6\u4E0D\u53EF\u7528\uFF1A${block.alt}`)
+            h(Text, { fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#A3A3A3" }, `\u56FE\u7247\u9644\u4EF6\u4E0D\u53EF\u7528\uFF1A${block.alt}`)
           );
         }
         const size = imageSize(asset, block.manualWidth);
@@ -535,7 +539,7 @@
               height: size.height,
               cornerRadius: 6
             }),
-            h(Text, { key: `${key}-caption`, fontSize: 12, fill: "#737373" }, block.alt || asset.name)
+            h(Text, { key: `${key}-caption`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#737373" }, block.alt || asset.name)
           ]
         );
       }
@@ -614,7 +618,7 @@
         const upgradedCount = upgradeLegacyWidgetsOnCurrentPage();
         if (upgradedCount > 0) figma.notify(`\u5DF2\u4FDD\u7559\u6570\u636E\u5E76\u5347\u7EA7 ${upgradedCount} \u4E2A\u65E7\u7248 MD Block`);
         figma.showUI(__html__, {
-          width: 960,
+          width: 480,
           height: 640,
           title: "MD Block",
           themeColors: true
@@ -746,13 +750,13 @@
         onClick: openEditor
       },
       [
-        h(Text, { key: "document-title", width: "fill-parent", fontSize: 20, fontWeight: 600, lineHeight: "135%", fill: "#171717" }, title || "\u672A\u547D\u540D"),
+        h(Text, { key: "document-title", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 600, lineHeight: "135%", fill: "#171717" }, title || "\u672A\u547D\u540D"),
         h(Rectangle, { key: "document-divider", width: "fill-parent", height: 1, fill: "#E5E5E5" }),
-        ...visibleBlocks.length > 0 ? renderedBlocks : [h(Text, { key: "empty-state", width: "fill-parent", fontSize: 14, fill: "#A3A3A3" }, "\u6682\u65E0 Markdown \u5185\u5BB9")],
+        ...visibleBlocks.length > 0 ? renderedBlocks : [h(Text, { key: "empty-state", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, fill: "#A3A3A3" }, "\u6682\u65E0 Markdown \u5185\u5BB9")],
         ...truncated ? [
           h(
             Text,
-            { key: "content-truncated", width: "fill-parent", fontSize: 12, fill: "#737373" },
+            { key: "content-truncated", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#737373" },
             "\u5185\u5BB9\u8F83\u591A\uFF0C\u753B\u5E03\u4EC5\u5C55\u793A\u90E8\u5206\u5185\u5BB9 \xB7 \u70B9\u51FB\u6253\u5F00\u5B8C\u6574\u6587\u6863"
           )
         ] : []

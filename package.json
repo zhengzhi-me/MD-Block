@@ -1,6 +1,6 @@
 {
   "name": "markdown-block",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Figma plugin for creating, editing, and displaying Markdown documents",
   "private": true,
   "license": "MIT",

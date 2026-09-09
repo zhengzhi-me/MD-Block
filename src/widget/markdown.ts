@@ -42,6 +42,7 @@ function cleanLinkHref(markdown: string): string {
 }
 
 export function parseInline(markdown: string): WidgetInlineSegment[] {
+  if (isVisualBlank(markdown)) return [{ text: ' ' }]
   const segments: WidgetInlineSegment[] = []
   // 支持 URL 中的一层配对括号，兼容旧版以 Figma 文件名作为路径 slug 的节点链接。
   const linkPattern = /(!?)\[([^\]]*)\]\(((?:<[^>\n]+>)|(?:\\.|[^()\s]|\([^()\s]*\))+)(?:\s+['"][^'"]*['"])?\)/g

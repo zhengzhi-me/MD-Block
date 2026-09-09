@@ -54,7 +54,7 @@ export default function App() {
   const [docData, setDocData] = useState<WidgetDocData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(true)
-  const [tocCollapsed, setTocCollapsed] = useState(false)
+  const [tocCollapsed, setTocCollapsed] = useState(true)
   const [fileLinkDialogOpen, setFileLinkDialogOpen] = useState(false)
   const [fileLinkValue, setFileLinkValue] = useState('')
   const [insertAfterFileLink, setInsertAfterFileLink] = useState(false)

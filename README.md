@@ -3,7 +3,7 @@
 在 Figma 画布中编辑、展示和共享 Markdown 文档的开源 Widget。
 
 [![Figma Community](https://img.shields.io/badge/Figma_Community-安装_MD_Block-F24E1E?logo=figma&logoColor=white)](https://www.figma.com/community/widget/1671425799803301634)
-[![Version](https://img.shields.io/badge/version-0.2.2-2563EB)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.3-2563EB)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-171717)](./LICENSE)
 
 ## 在线使用
@@ -93,7 +93,7 @@ CHANGELOG.md         # 版本记录、兼容性与验证状态
 
 ## 版本记录
 
-当前公开版本为 **V0.2.2**。完整功能变化、数据兼容和验证结果请查看 [CHANGELOG.md](./CHANGELOG.md)。
+当前公开版本为 **V0.2.2**，仓库开发版本为 **V0.2.3（待发布）**。完整功能变化、数据兼容和验证结果请查看 [CHANGELOG.md](./CHANGELOG.md)。
 
 ## 参与贡献
 

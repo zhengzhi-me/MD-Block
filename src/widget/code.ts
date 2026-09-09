@@ -11,6 +11,7 @@ const { h, AutoLayout, Frame, Image, Rectangle, Span, Text, useSyncedState, useW
 
 const CONTENT_WIDTH = 720
 const CANVAS_NODE_BUDGET = 360
+const CANVAS_FONT_FAMILY = 'Noto Sans SC'
 const WIDGET_SCHEMA_VERSION = 3
 const DOCUMENT_FILE_KEY_DATA = 'md-block-figma-file-key-v1'
 let suppressEditorOpenUntil = 0
@@ -123,7 +124,7 @@ function renderInlineText(
   maxWidth = CONTENT_WIDTH,
 ) {
   if (!segments.some((segment) => figmaNodeIdFromHref(segment.href))) {
-    return h(Text, { ...props, key }, renderInline(segments, key))
+    return h(Text, { fontFamily: CANVAS_FONT_FAMILY, ...props, key }, renderInline(segments, key))
   }
 
   const { width, key: _ignoredKey, ...segmentProps } = props
@@ -161,6 +162,7 @@ function renderInlineText(
       return h(
         Text,
         {
+          fontFamily: CANVAS_FONT_FAMILY,
           ...segmentProps,
           ...linkStyle,
           ...interaction,
@@ -304,7 +306,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         AutoLayout,
         { key, width: 'fill-parent', spacing: 8, verticalAlignItems: 'start' },
         [
-          h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: '155%', fill: '#737373' }, '•'),
+          h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: '155%', fill: '#737373' }, '•'),
           renderInlineText(block.inline, `${key}-text`, { width: 'fill-parent', fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 24),
         ],
       )
@@ -313,7 +315,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         AutoLayout,
         { key, width: 'fill-parent', spacing: 8, verticalAlignItems: 'start' },
         [
-          h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: '155%', fill: '#737373' }, `${block.order}.`),
+          h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: '155%', fill: '#737373' }, `${block.order}.`),
           renderInlineText(block.inline, `${key}-text`, { width: 'fill-parent', fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 32),
         ],
       )
@@ -373,7 +375,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         return h(
           AutoLayout,
           { key, width: 'fill-parent', padding: 12, fill: '#FAFAFA', cornerRadius: 6 },
-          h(Text, { fontSize: 12, fill: '#A3A3A3' }, `图片附件不可用：${block.alt}`),
+          h(Text, { fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: '#A3A3A3' }, `图片附件不可用：${block.alt}`),
         )
       }
       const size = imageSize(asset, block.manualWidth)
@@ -388,7 +390,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
             height: size.height,
             cornerRadius: 6,
           }),
-          h(Text, { key: `${key}-caption`, fontSize: 12, fill: '#737373' }, block.alt || asset.name),
+          h(Text, { key: `${key}-caption`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: '#737373' }, block.alt || asset.name),
         ],
       )
     }
@@ -482,7 +484,7 @@ function MarkdownBlockWidget() {
       if (upgradedCount > 0) figma.notify(`已保留数据并升级 ${upgradedCount} 个旧版 MD Block`)
 
       figma.showUI(__html__, {
-        width: 960,
+        width: 480,
         height: 640,
         title: 'MD Block',
         themeColors: true,
@@ -619,16 +621,16 @@ function MarkdownBlockWidget() {
       onClick: openEditor,
     },
     [
-      h(Text, { key: 'document-title', width: 'fill-parent', fontSize: 20, fontWeight: 600, lineHeight: '135%', fill: '#171717' }, title || '未命名'),
+      h(Text, { key: 'document-title', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 600, lineHeight: '135%', fill: '#171717' }, title || '未命名'),
       h(Rectangle, { key: 'document-divider', width: 'fill-parent', height: 1, fill: '#E5E5E5' }),
       ...(visibleBlocks.length > 0
         ? renderedBlocks
-        : [h(Text, { key: 'empty-state', width: 'fill-parent', fontSize: 14, fill: '#A3A3A3' }, '暂无 Markdown 内容')]),
+        : [h(Text, { key: 'empty-state', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, fill: '#A3A3A3' }, '暂无 Markdown 内容')]),
       ...(truncated
         ? [
             h(
               Text,
-              { key: 'content-truncated', width: 'fill-parent', fontSize: 12, fill: '#737373' },
+              { key: 'content-truncated', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: '#737373' },
               '内容较多，画布仅展示部分内容 · 点击打开完整文档',
             ),
           ]
