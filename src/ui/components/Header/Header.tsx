@@ -106,10 +106,10 @@ export function Header({
           onChange={(event) => setTitle(event.target.value)}
           placeholder="文档标题"
           aria-label="文档标题"
-          className="min-w-0 flex-1 bg-transparent px-1 text-base font-semibold text-neutral-900 placeholder:text-neutral-300 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent px-1 text-base font-bold text-neutral-900 placeholder:text-neutral-300 focus:outline-none"
         />
       ) : (
-        <h1 className="min-w-0 flex-1 truncate px-1 text-base font-semibold text-neutral-900">
+        <h1 className="min-w-0 flex-1 truncate px-1 text-base font-bold text-neutral-900">
           {title || '未命名'}
         </h1>
       )}

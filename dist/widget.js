@@ -290,10 +290,29 @@
     );
   }
   function renderInlineText(segments, key, props, maxWidth = CONTENT_WIDTH) {
-    if (!segments.some((segment) => figmaNodeIdFromHref(segment.href))) {
+    var _a, _b;
+    const internalNodeIds = segments.map((segment) => figmaNodeIdFromHref(segment.href));
+    if (!internalNodeIds.some(Boolean)) {
       return h(Text, __spreadProps(__spreadValues({ fontFamily: CANVAS_FONT_FAMILY }, props), { key }), renderInline(segments, key));
     }
-    const _a = props, { width, key: _ignoredKey } = _a, segmentProps = __objRest(_a, ["width", "key"]);
+    const standaloneNodeId = segments.length === 1 ? internalNodeIds[0] : null;
+    if (standaloneNodeId) {
+      return h(
+        Text,
+        __spreadProps(__spreadValues({
+          fontFamily: CANVAS_FONT_FAMILY
+        }, props), {
+          key,
+          fill: "#2563EB",
+          textDecoration: "underline",
+          onClick: () => handleFigmaNodeClick(standaloneNodeId),
+          tooltip: "\u8DF3\u8F6C\u5230\u5BF9\u5E94\u753B\u677F\u6216\u56FE\u5C42",
+          hoverStyle: { fill: "#1D4ED8" }
+        }),
+        (_b = (_a = segments[0]) == null ? void 0 : _a.text) != null ? _b : " "
+      );
+    }
+    const _c = props, { width, key: _ignoredKey } = _c, segmentProps = __objRest(_c, ["width", "key"]);
     const horizontalAlign = props.horizontalAlignText === "right" ? "end" : props.horizontalAlignText === "center" ? "center" : "start";
     return h(
       AutoLayout,
@@ -307,7 +326,8 @@
         verticalAlignItems: "start"
       },
       segments.map((segment, index) => {
-        const nodeId = figmaNodeIdFromHref(segment.href);
+        var _a2;
+        const nodeId = (_a2 = internalNodeIds[index]) != null ? _a2 : null;
         const linkStyle = segment.href ? { fill: "#2563EB", textDecoration: "underline" } : {};
         const interaction = nodeId ? {
           onClick: () => handleFigmaNodeClick(nodeId),
@@ -444,7 +464,7 @@
             name: `Heading ${block.level}`,
             width: "fill-parent",
             fontSize: (_a = sizes[block.level]) != null ? _a : 14,
-            fontWeight: 600,
+            fontWeight: 700,
             lineHeight: "135%",
             fill: "#171717"
           }
@@ -456,7 +476,7 @@
           { key, width: "fill-parent", spacing: 8, verticalAlignItems: "start" },
           [
             h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: "155%", fill: "#737373" }, "\u2022"),
-            renderInlineText(block.inline, `${key}-text`, { width: "fill-parent", fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 24)
+            renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 24, fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 24)
           ]
         );
       case "ordered":
@@ -465,7 +485,7 @@
           { key, width: "fill-parent", spacing: 8, verticalAlignItems: "start" },
           [
             h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: "155%", fill: "#737373" }, `${block.order}.`),
-            renderInlineText(block.inline, `${key}-text`, { width: "fill-parent", fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 32)
+            renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 32, fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 32)
           ]
         );
       case "quote":
@@ -481,7 +501,7 @@
           },
           [
             h(Rectangle, { key: `${key}-bar`, width: 3, height: "fill-parent", fill: "#A3A3A3", cornerRadius: 2 }),
-            renderInlineText(block.inline, `${key}-text`, { width: "fill-parent", fontSize: 14, lineHeight: "155%", fill: "#525252" }, CONTENT_WIDTH - 36)
+            renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 36, fontSize: 14, lineHeight: "155%", fill: "#525252" }, CONTENT_WIDTH - 36)
           ]
         );
       case "code":
@@ -750,7 +770,7 @@
         onClick: openEditor
       },
       [
-        h(Text, { key: "document-title", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 600, lineHeight: "135%", fill: "#171717" }, title || "\u672A\u547D\u540D"),
+        h(Text, { key: "document-title", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 700, lineHeight: "135%", fill: "#171717" }, title || "\u672A\u547D\u540D"),
         h(Rectangle, { key: "document-divider", width: "fill-parent", height: 1, fill: "#E5E5E5" }),
         ...visibleBlocks.length > 0 ? renderedBlocks : [h(Text, { key: "empty-state", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, fill: "#A3A3A3" }, "\u6682\u65E0 Markdown \u5185\u5BB9")],
         ...truncated ? [

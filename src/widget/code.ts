@@ -123,8 +123,27 @@ function renderInlineText(
   props: InlineTextProps,
   maxWidth = CONTENT_WIDTH,
 ) {
-  if (!segments.some((segment) => figmaNodeIdFromHref(segment.href))) {
+  const internalNodeIds = segments.map((segment) => figmaNodeIdFromHref(segment.href))
+  if (!internalNodeIds.some(Boolean)) {
     return h(Text, { fontFamily: CANVAS_FONT_FAMILY, ...props, key }, renderInline(segments, key))
+  }
+
+  const standaloneNodeId = segments.length === 1 ? internalNodeIds[0] : null
+  if (standaloneNodeId) {
+    return h(
+      Text,
+      {
+        fontFamily: CANVAS_FONT_FAMILY,
+        ...props,
+        key,
+        fill: '#2563EB',
+        textDecoration: 'underline',
+        onClick: () => handleFigmaNodeClick(standaloneNodeId),
+        tooltip: '跳转到对应画板或图层',
+        hoverStyle: { fill: '#1D4ED8' },
+      },
+      segments[0]?.text ?? ' ',
+    )
   }
 
   const { width, key: _ignoredKey, ...segmentProps } = props
@@ -146,7 +165,7 @@ function renderInlineText(
       verticalAlignItems: 'start',
     },
     segments.map((segment, index) => {
-      const nodeId = figmaNodeIdFromHref(segment.href)
+      const nodeId = internalNodeIds[index] ?? null
       const linkStyle = segment.href
         ? { fill: '#2563EB' as const, textDecoration: 'underline' as const }
         : {}
@@ -295,7 +314,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
           name: `Heading ${block.level}`,
           width: 'fill-parent',
           fontSize: sizes[block.level] ?? 14,
-          fontWeight: 600,
+          fontWeight: 700,
           lineHeight: '135%',
           fill: '#171717',
         },
@@ -307,7 +326,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         { key, width: 'fill-parent', spacing: 8, verticalAlignItems: 'start' },
         [
           h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: '155%', fill: '#737373' }, '•'),
-          renderInlineText(block.inline, `${key}-text`, { width: 'fill-parent', fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 24),
+          renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 24, fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 24),
         ],
       )
     case 'ordered':
@@ -316,7 +335,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         { key, width: 'fill-parent', spacing: 8, verticalAlignItems: 'start' },
         [
           h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: '155%', fill: '#737373' }, `${block.order}.`),
-          renderInlineText(block.inline, `${key}-text`, { width: 'fill-parent', fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 32),
+          renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 32, fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 32),
         ],
       )
     case 'quote':
@@ -332,7 +351,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         },
         [
           h(Rectangle, { key: `${key}-bar`, width: 3, height: 'fill-parent', fill: '#A3A3A3', cornerRadius: 2 }),
-          renderInlineText(block.inline, `${key}-text`, { width: 'fill-parent', fontSize: 14, lineHeight: '155%', fill: '#525252' }, CONTENT_WIDTH - 36),
+          renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 36, fontSize: 14, lineHeight: '155%', fill: '#525252' }, CONTENT_WIDTH - 36),
         ],
       )
     case 'code':
@@ -621,7 +640,7 @@ function MarkdownBlockWidget() {
       onClick: openEditor,
     },
     [
-      h(Text, { key: 'document-title', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 600, lineHeight: '135%', fill: '#171717' }, title || '未命名'),
+      h(Text, { key: 'document-title', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 700, lineHeight: '135%', fill: '#171717' }, title || '未命名'),
       h(Rectangle, { key: 'document-divider', width: 'fill-parent', height: 1, fill: '#E5E5E5' }),
       ...(visibleBlocks.length > 0
         ? renderedBlocks
