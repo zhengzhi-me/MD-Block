@@ -211,6 +211,7 @@
   var CONTENT_WIDTH = 720;
   var CANVAS_NODE_BUDGET = 360;
   var CANVAS_FONT_FAMILY = "Noto Sans SC";
+  var CANVAS_EMOJI_FONT_FAMILY = "Noto Emoji";
   var WIDGET_SCHEMA_VERSION = 3;
   var DOCUMENT_FILE_KEY_DATA = "md-block-figma-file-key-v1";
   var suppressEditorOpenUntil = 0;
@@ -283,17 +284,46 @@
     const width = manualWidth ? Math.max(120, Math.min(1600, Math.round(manualWidth))) : CONTENT_WIDTH;
     return { width, height: Math.max(80, Math.round(sourceHeight / sourceWidth * width)) };
   }
-  function renderInline(segments, key) {
-    return segments.map(
-      (segment, index) => h(
+  function splitCanvasTextRuns(text) {
+    var _a;
+    const emojiPattern = /(?:[#*0-9]\uFE0F?\u20E3|[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F|\uFE0E)?(?:[\u{1F3FB}-\u{1F3FF}])?)(?:\u200D(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F|\uFE0E)?(?:[\u{1F3FB}-\u{1F3FF}])?))*/gu;
+    const runs = [];
+    let cursor = 0;
+    for (const match of text.matchAll(emojiPattern)) {
+      const offset = (_a = match.index) != null ? _a : 0;
+      if (offset > cursor) runs.push({ text: text.slice(cursor, offset), emoji: false });
+      runs.push({ text: match[0], emoji: true });
+      cursor = offset + match[0].length;
+    }
+    if (cursor < text.length) runs.push({ text: text.slice(cursor), emoji: false });
+    return runs.length > 0 ? runs : [{ text, emoji: false }];
+  }
+  function renderCanvasTextRuns(text, key) {
+    return splitCanvasTextRuns(text).map(
+      (run, index) => h(
         Span,
-        segment.href ? {
-          key: `${key}-${index}`,
-          href: segment.href,
-          fill: "#2563EB",
-          textDecoration: "underline"
-        } : { key: `${key}-${index}` },
-        segment.text
+        __spreadValues({
+          key: `${key}-run-${index}`
+        }, run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
+        run.text
+      )
+    );
+  }
+  function renderInline(segments, key) {
+    return segments.flatMap(
+      (segment, index) => splitCanvasTextRuns(segment.text).map(
+        (run, runIndex) => h(
+          Span,
+          segment.href ? __spreadValues({
+            key: `${key}-${index}-${runIndex}`,
+            href: segment.href,
+            fill: "#2563EB",
+            textDecoration: "underline"
+          }, run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}) : __spreadValues({
+            key: `${key}-${index}-${runIndex}`
+          }, run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
+          run.text
+        )
       )
     );
   }
@@ -317,7 +347,7 @@
           tooltip: "\u8DF3\u8F6C\u5230\u5BF9\u5E94\u753B\u677F\u6216\u56FE\u5C42",
           hoverStyle: { fill: "#1D4ED8" }
         }),
-        (_b = (_a = segments[0]) == null ? void 0 : _a.text) != null ? _b : " "
+        renderCanvasTextRuns((_b = (_a = segments[0]) == null ? void 0 : _a.text) != null ? _b : " ", `${key}-standalone`)
       );
     }
     const _c = props, { width, key: _ignoredKey } = _c, segmentProps = __objRest(_c, ["width", "key"]);
@@ -351,7 +381,7 @@
             width: "hug-contents",
             maxWidth
           }),
-          segment.text
+          renderCanvasTextRuns(segment.text, `${key}-${index}`)
         );
       })
     );
@@ -526,7 +556,7 @@
           h(
             Text,
             { width: CONTENT_WIDTH - 28, fontFamily: "Roboto Mono", fontSize: 12, lineHeight: "155%", fill: "#262626" },
-            block.text
+            renderCanvasTextRuns(block.text, `${key}-code`)
           )
         );
       case "divider":
@@ -562,12 +592,17 @@
           [
             h(Image, {
               key: `${key}-image`,
-              src: asset.dataUrl,
+              src: {
+                type: "image",
+                src: asset.dataUrl,
+                imageSize: { width: Math.max(asset.width, 1), height: Math.max(asset.height, 1) },
+                scaleMode: "fit"
+              },
               width: size.width,
               height: size.height,
               cornerRadius: 6
             }),
-            h(Text, { key: `${key}-caption`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#737373" }, block.alt || asset.name)
+            h(Text, { key: `${key}-caption`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#737373" }, renderCanvasTextRuns(block.alt || asset.name, `${key}-caption`))
           ]
         );
       }
@@ -778,7 +813,7 @@
         onClick: openEditor
       },
       [
-        h(Text, { key: "document-title", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 700, lineHeight: "135%", fill: "#171717" }, title || "\u672A\u547D\u540D"),
+        h(Text, { key: "document-title", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 700, lineHeight: "135%", fill: "#171717" }, renderCanvasTextRuns(title || "\u672A\u547D\u540D", "document-title")),
         h(Rectangle, { key: "document-divider", width: "fill-parent", height: 1, fill: "#E5E5E5" }),
         ...visibleBlocks.length > 0 ? renderedBlocks : [h(Text, { key: "empty-state", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, fill: "#A3A3A3" }, "\u6682\u65E0 Markdown \u5185\u5BB9")],
         ...truncated ? [
