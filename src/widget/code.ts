@@ -253,7 +253,7 @@ function renderTableRow(
           cells[columnIndex] ?? [{ text: ' ' }],
           `${key}-inline-${columnIndex}`,
           {
-            width: 'fill-parent',
+            width: Math.max(1, width - 20),
             fontSize: 12,
             fontWeight: header ? 600 : 400,
             lineHeight: '145%',
@@ -367,7 +367,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         },
         h(
           Text,
-          { width: 'fill-parent', fontFamily: 'Roboto Mono', fontSize: 12, lineHeight: '155%', fill: '#262626' },
+          { width: CONTENT_WIDTH - 28, fontFamily: 'Roboto Mono', fontSize: 12, lineHeight: '155%', fill: '#262626' },
           block.text,
         ),
       )

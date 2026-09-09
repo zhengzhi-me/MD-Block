@@ -10,6 +10,7 @@ import { table } from '@milkdown/crepe/feature/table'
 import { toolbar } from '@milkdown/crepe/feature/toolbar'
 import { tableBlockView } from '@milkdown/kit/component/table-block'
 import { commandsCtx, editorViewCtx } from '@milkdown/kit/core'
+import { lift } from '@milkdown/kit/prose/commands'
 import { TextSelection } from '@milkdown/kit/prose/state'
 import { addColAfterCommand, addRowAfterCommand } from '@milkdown/kit/preset/gfm'
 import { replaceAll } from '@milkdown/utils'
@@ -268,10 +269,60 @@ export function useCrepe({
       })
     }
 
+    let pendingEmptyListBackspace = false
+    const handleEmptyListBackspace = (event: KeyboardEvent) => {
+      if (event.key !== 'Backspace' || event.defaultPrevented || event.isComposing || readonly) {
+        if (event.key !== 'Shift' && event.key !== 'Alt' && event.key !== 'Control' && event.key !== 'Meta') {
+          pendingEmptyListBackspace = false
+        }
+        return
+      }
+
+      crepe.editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx)
+        const { selection } = view.state
+        if (!(selection instanceof TextSelection) || !selection.empty) {
+          pendingEmptyListBackspace = false
+          return
+        }
+        const { $from } = selection
+        const listItemDepth = $from.depth - 1
+        const isEmptyListItem = listItemDepth > 0 &&
+          $from.parent.isTextblock &&
+          $from.parent.content.size === 0 &&
+          $from.parentOffset === 0 &&
+          $from.node(listItemDepth).type.name === 'list_item'
+        if (!isEmptyListItem) {
+          pendingEmptyListBackspace = false
+          return
+        }
+
+        if (!pendingEmptyListBackspace) {
+          // 第一次退格交给 Milkdown 去掉项目符号；记录位置供下一次退格退出列表。
+          pendingEmptyListBackspace = true
+          return
+        }
+
+        // 去掉序号后，空段落可能成为前一列表项的第二个子节点；直接提升当前空段落，
+        // 可保留前一列表项内容，并把光标移动到列表外的普通空白行。
+        if (!lift(view.state, view.dispatch)) return
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        pendingEmptyListBackspace = false
+        view.focus()
+      })
+    }
+
+    const resetEmptyListBackspace = () => {
+      pendingEmptyListBackspace = false
+    }
+
     root.addEventListener('pointermove', handleTablePointerMove)
     root.addEventListener('focusin', handleTableFocus)
     tableActions.addEventListener('pointerdown', handleTableAction)
+    root.addEventListener('keydown', handleEmptyListBackspace, true)
     root.addEventListener('keydown', handleLinkBoundarySpace)
+    root.addEventListener('pointerdown', resetEmptyListBackspace, true)
 
     let imageResizeCleanup: (() => void) | null = null
 
@@ -405,7 +456,9 @@ export function useCrepe({
       root.removeEventListener('pointermove', handleTablePointerMove)
       root.removeEventListener('focusin', handleTableFocus)
       tableActions.removeEventListener('pointerdown', handleTableAction)
+      root.removeEventListener('keydown', handleEmptyListBackspace, true)
       root.removeEventListener('keydown', handleLinkBoundarySpace)
+      root.removeEventListener('pointerdown', resetEmptyListBackspace, true)
       tableActions.remove()
       root.removeEventListener('pointerdown', handleImageResizeStart, true)
       observer.disconnect()

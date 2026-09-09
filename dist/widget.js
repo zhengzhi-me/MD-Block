@@ -116,7 +116,7 @@
     return /^\s*$/.test(line) || isVisualBlank(line) || startsTable(lines, index) || /^#{1,6}\s+/.test(line) || /^\s*[-*+]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line) || /^\s*>\s?/.test(line) || /^\s*```/.test(line) || /^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line) || /^\s*!\[[^\]]*\]\(figma-asset:\/\/[^)]+\)\s*$/.test(line);
   }
   function parseWidgetMarkdown(markdown) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
     const lines = markdown.replace(/\r\n?/g, "\n").split("\n");
     const blocks = [];
     for (let index = 0; index < lines.length; index += 1) {
@@ -184,13 +184,21 @@
       }
       const quote = /^\s*>\s?(.*)$/.exec(line);
       if (quote) {
-        blocks.push({ type: "quote", inline: parseInline(quote[1] || " ") });
+        const quoteLines = [(_g = quote[1]) != null ? _g : ""];
+        while (index + 1 < lines.length) {
+          const nextQuote = /^\s*>\s?(.*)$/.exec((_h = lines[index + 1]) != null ? _h : "");
+          if (!nextQuote) break;
+          index += 1;
+          quoteLines.push((_i = nextQuote[1]) != null ? _i : "");
+        }
+        const visibleQuoteLines = quoteLines.filter((quoteLine) => quoteLine.trim().length > 0);
+        blocks.push({ type: "quote", inline: parseInline(visibleQuoteLines.join("\n") || " ") });
         continue;
       }
       const paragraph = [line.trim()];
       while (index + 1 < lines.length && !isBlockStart(lines, index + 1)) {
         index += 1;
-        paragraph.push(((_g = lines[index]) != null ? _g : "").trim());
+        paragraph.push(((_j = lines[index]) != null ? _j : "").trim());
       }
       blocks.push({ type: "paragraph", inline: parseInline(paragraph.join(" ")) });
     }
@@ -405,7 +413,7 @@
               (_a = cells[columnIndex]) != null ? _a : [{ text: " " }],
               `${key}-inline-${columnIndex}`,
               {
-                width: "fill-parent",
+                width: Math.max(1, width - 20),
                 fontSize: 12,
                 fontWeight: header ? 600 : 400,
                 lineHeight: "145%",
@@ -517,7 +525,7 @@
           },
           h(
             Text,
-            { width: "fill-parent", fontFamily: "Roboto Mono", fontSize: 12, lineHeight: "155%", fill: "#262626" },
+            { width: CONTENT_WIDTH - 28, fontFamily: "Roboto Mono", fontSize: 12, lineHeight: "155%", fill: "#262626" },
             block.text
           )
         );

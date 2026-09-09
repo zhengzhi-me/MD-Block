@@ -211,7 +211,15 @@ export function parseWidgetMarkdown(markdown: string): WidgetMarkdownBlock[] {
 
     const quote = /^\s*>\s?(.*)$/.exec(line)
     if (quote) {
-      blocks.push({ type: 'quote', inline: parseInline(quote[1] || ' ') })
+      const quoteLines = [quote[1] ?? '']
+      while (index + 1 < lines.length) {
+        const nextQuote = /^\s*>\s?(.*)$/.exec(lines[index + 1] ?? '')
+        if (!nextQuote) break
+        index += 1
+        quoteLines.push(nextQuote[1] ?? '')
+      }
+      const visibleQuoteLines = quoteLines.filter((quoteLine) => quoteLine.trim().length > 0)
+      blocks.push({ type: 'quote', inline: parseInline(visibleQuoteLines.join('\n') || ' ') })
       continue
     }
 
