@@ -1,0 +1,400 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.header-icon-button-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.header-icon-tooltip {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  z-index: 80;
+  visibility: hidden;
+  width: max-content;
+  max-width: 220px;
+  transform: translateX(-50%);
+  border: 1px solid #e5e5e5;
+  border-radius: 5px;
+  background: #262626;
+  padding: 4px 7px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 16px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.header-icon-button-wrap:hover .header-icon-tooltip,
+.header-icon-button-wrap:focus-within .header-icon-tooltip {
+  animation: show-header-icon-tooltip 0s linear 1s forwards;
+}
+
+.header-icon-actions .header-icon-tooltip {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.header-icon-button-wrap-menu-open .header-icon-tooltip {
+  display: none;
+}
+
+.header-context-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 90;
+  width: max-content;
+  min-width: 164px;
+  padding: 4px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+}
+
+.header-context-menu button {
+  display: flex;
+  width: 100%;
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #404040;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.header-context-menu button:hover,
+.header-context-menu button:focus-visible {
+  background: #f5f5f5;
+  color: #171717;
+  outline: none;
+}
+
+@keyframes show-header-icon-tooltip {
+  to {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+.milkdown {
+  --crepe-base-font-size: 14px;
+  --crepe-font-title: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --crepe-font-default: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* 正文左右边距一致；行手柄通过浮层靠近正文，不再占用额外左侧留白。 */
+.milkdown .ProseMirror {
+  min-height: 100%;
+  padding: 30px 44px 56px;
+  font-size: 14px;
+}
+
+.milkdown .ProseMirror h1,
+.milkdown .ProseMirror h2,
+.milkdown .ProseMirror h3,
+.milkdown .ProseMirror h4,
+.milkdown .ProseMirror h5,
+.milkdown .ProseMirror h6 {
+  font-family: var(--crepe-font-default);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.milkdown .ProseMirror h1 {
+  margin-top: 24px;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.milkdown .ProseMirror h2 {
+  margin-top: 22px;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.milkdown .ProseMirror h3 {
+  margin-top: 20px;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.milkdown .ProseMirror h4 {
+  margin-top: 18px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.milkdown .ProseMirror h5,
+.milkdown .ProseMirror h6 {
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.milkdown .ProseMirror p,
+.milkdown .ProseMirror li,
+.milkdown .ProseMirror blockquote {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.milkdown .ProseMirror .md-active-heading::before {
+  content: attr(data-md-marker);
+  color: #a3a3a3;
+  font-family: var(--crepe-font-code);
+  font-size: 0.82em;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.milkdown .milkdown-block-handle {
+  z-index: 20;
+}
+
+.milkdown .milkdown-block-handle .operation-item:first-child {
+  display: none;
+}
+
+.milkdown .milkdown-block-handle .operation-item {
+  height: 24px;
+  width: 24px;
+  padding: 3px;
+  cursor: grab;
+}
+
+.milkdown .milkdown-block-handle .operation-item svg {
+  height: 16px;
+  width: 16px;
+}
+
+.milkdown .milkdown-block-handle .operation-item:active {
+  cursor: grabbing;
+}
+
+.milkdown .milkdown-slash-menu,
+.milkdown .milkdown-toolbar,
+.milkdown .milkdown-link-preview,
+.milkdown .milkdown-link-edit {
+  z-index: 40;
+}
+
+/* Notion 风格的紧凑区块菜单：保留分类标签，减少纵向留白。 */
+.milkdown .milkdown-slash-menu {
+  width: 292px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.12), 0 2px 6px rgb(0 0 0 / 0.06);
+}
+
+.milkdown .milkdown-slash-menu .tab-group {
+  padding: 8px 8px 0;
+}
+
+.milkdown .milkdown-slash-menu .tab-group ul {
+  gap: 3px;
+  padding: 0 0 7px;
+}
+
+.milkdown .milkdown-slash-menu .tab-group ul li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.milkdown .milkdown-slash-menu .menu-groups {
+  max-height: 296px;
+  padding: 4px 8px 8px;
+}
+
+.milkdown .milkdown-slash-menu .menu-groups .menu-group h6 {
+  padding: 8px 7px 5px;
+  color: #8a8a8a;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-transform: none;
+}
+
+.milkdown .milkdown-slash-menu .menu-groups .menu-group li {
+  min-width: 0;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+}
+
+.milkdown .milkdown-slash-menu .menu-groups .menu-group li svg {
+  width: 18px;
+  height: 18px;
+}
+
+.milkdown .milkdown-slash-menu .menu-groups .menu-group li > span {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.milkdown .milkdown-slash-menu .menu-groups .menu-group + .menu-group::before {
+  margin: 3px 7px;
+}
+
+/* 链接在正文中清晰可辨，悬浮工具窗可从链接平滑移入操作。 */
+.milkdown .ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.milkdown .milkdown-link-preview > .link-preview,
+.milkdown .milkdown-link-edit > .link-edit {
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.12);
+}
+
+.milkdown .milkdown-link-preview::before,
+.milkdown .milkdown-link-edit::before {
+  position: absolute;
+  inset: -8px 0;
+  z-index: -1;
+  content: '';
+}
+
+/* 暂停列宽拖拽：使用原生 ProseMirror 表格，优先保证中文输入法组合输入稳定。 */
+.markdown-editor-shell {
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.figma-md-table-actions {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #e5e5e5;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+.figma-md-table-actions[hidden] {
+  display: none;
+}
+
+.figma-md-table-actions button {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #525252;
+  font-size: 12px;
+  line-height: 24px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.figma-md-table-actions button:hover {
+  background: #f5f5f5;
+  color: #171717;
+}
+
+.milkdown .ProseMirror table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: auto;
+  margin: 20px 0 8px;
+  border-collapse: collapse;
+}
+
+.milkdown .ProseMirror table th,
+.milkdown .ProseMirror table td {
+  min-width: 0;
+  padding: 7px 12px;
+  border: 1px solid #e5e5e5;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.milkdown .ProseMirror table th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.milkdown .ProseMirror .column-resize-handle {
+  display: none;
+}
+
+/* 新图片默认铺满正文；右下角手柄写入绝对像素宽度后不再随页面缩放。 */
+.milkdown .milkdown-image-block {
+  max-width: none;
+  overflow: visible;
+}
+
+.milkdown .milkdown-image-block > .image-wrapper {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.milkdown .milkdown-image-block > .image-wrapper img {
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.milkdown .milkdown-image-block > .image-wrapper > .image-resize-handle {
+  right: -6px;
+  bottom: -6px;
+  left: auto;
+  width: 12px;
+  height: 12px;
+  transform: none;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  background: #2563eb;
+  box-shadow: 0 0 0 1px rgb(37 99 235 / 0.35);
+}
+
+.milkdown .milkdown-image-block > .image-wrapper > .image-resize-handle:hover {
+  cursor: nwse-resize;
+}
+
+@media (max-width: 560px) {
+  .milkdown .ProseMirror {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}

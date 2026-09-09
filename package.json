@@ -1,0 +1,49 @@
+{
+  "name": "markdown-block",
+  "version": "0.2.2",
+  "description": "Figma plugin for creating, editing, and displaying Markdown documents",
+  "private": true,
+  "license": "MIT",
+  "homepage": "https://www.figma.com/community/widget/1671425799803301634",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhengzhi-me/MD-Block.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zhengzhi-me/MD-Block/issues"
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "npm run build:ui && npm run build:widget",
+    "build:ui": "vite build",
+    "build:widget": "mkdir -p dist && esbuild src/widget/code.ts --bundle --format=iife --target=es2017 --outfile=dist/widget.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@milkdown/crepe": "^7.22.1",
+    "@milkdown/utils": "^7.22.1",
+    "lucide-react": "^0.414.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.90.0",
+    "@figma/widget-typings": "^1.13.0",
+    "@types/mdast": "^4.0.4",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "esbuild": "^0.23.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.1",
+    "vite-plugin-singlefile": "^2.0.2"
+  }
+}

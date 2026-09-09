@@ -1,0 +1,14 @@
+{
+  "name": "MD Block",
+  "id": "1671425799803301634",
+  "api": "1.0.0",
+  "widgetApi": "1.0.0",
+  "editorType": ["figma"],
+  "containsWidget": true,
+  "main": "dist/widget.js",
+  "ui": "dist/index.html",
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
