@@ -13,7 +13,7 @@ import {
   embedAssetsInMarkdown,
   normalizeMarkdownForExport,
 } from './utils/download'
-import { fileToImageAsset, imageAssetUri, normalizeImageAsset } from './utils/imageAsset'
+import { fileToImageAsset, imageAssetUri } from './utils/imageAsset'
 import type {
   ResizeDirection,
   WidgetDocData,
@@ -80,20 +80,6 @@ export default function App() {
           setSaved(true)
           setLoading(false)
           initializedRef.current = true
-          // 旧版可能保存了 WebP/SVG 或超过 Figma 4096px 边界的图片；后台规范化后沿用原资源 ID。
-          void Promise.all(initialAssets.map(async (asset) => {
-            try {
-              return await normalizeImageAsset(asset)
-            } catch {
-              return asset
-            }
-          })).then((normalizedAssets) => {
-            const changed = normalizedAssets.some((asset, index) => asset !== initialAssets[index])
-            if (!changed) return
-            assetsRef.current = normalizedAssets
-            setAssets(normalizedAssets)
-            setDocData((current) => current ? { ...current, assets: normalizedAssets } : current)
-          })
           break
         }
         case 'saved':

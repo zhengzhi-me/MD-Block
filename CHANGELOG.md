@@ -32,13 +32,13 @@
 - 连续引用行合并为同一个引用块，保留引用内部换行，不再重复显示引用竖线和块间距。
 - 修复代码块与表格单元格在画布中宽度塌缩、文字逐字纵向排列或被裁切的问题。
 - 空列表项支持两段式退格：第一次去掉项目符号或序号，第二次退出列表并回到普通空白行。
-- 修复图片在 Widget 画布中不显示的问题：使用显式 ImagePaint，并自动将旧版不兼容格式或超大尺寸图片规范化为 Figma 支持的资源。
-- 中文正文继续使用 `Noto Sans SC`，Emoji 字符单独使用 `Noto Emoji`，恢复标题、正文、列表、引用、代码块和表格中的 Emoji 显示。
+- 修复图片尺寸值被当作普通文本显示以及插图后 Widget 运行报错的问题；恢复稳定的 Image Data URI 渲染，并兼容当前 `figma-asset://` 与旧版内嵌 Data URI 图片。
+- 回退画布强制指定 `Noto Sans SC` / `Noto Emoji` 的方案，恢复 Figma 默认字体及其 Emoji 字形回退，避免 Emoji 显示为缺字方框。
 
 ### 中文字体
 
 - 编辑弹窗使用系统中文字体栈：macOS 优先 PingFang SC，Windows 优先 Microsoft YaHei，并提供 Noto Sans SC 与系统字体回退。
-- Figma Widget 画布受 API 限制不能按操作系统选择本机字体，统一使用受支持的 Google Font `Noto Sans SC`，保证跨平台中文显示一致。
+- Figma Widget 画布受 API 限制不能可靠指定本机 PingFang SC 或 Microsoft YaHei，恢复使用 Figma 默认字体与系统字形回退，优先保证中文和 Emoji 完整显示。
 - 代码块继续使用等宽字体 `Roboto Mono`。
 
 ### 数据兼容
@@ -53,7 +53,7 @@
 - 空白有序列表、无序列表和引用内容解析回归：通过。
 - 单节点链接列表布局与标题字重：通过类型检查和构建，待 Figma 本地运行验证。
 - 连续引用、代码块、表格画布布局与空列表退格：通过类型检查和构建，待 Figma 本地运行验证。
-- 图片资源规范化、ImagePaint 与 Emoji 分段字体：通过类型检查和构建，待 Figma 本地运行验证。
+- 新旧图片语法解析、Image Data URI 渲染和默认字体回退：通过类型检查、构建与 Widget 虚拟树回归，待 Figma 本地运行验证。
 - 默认窗口尺寸、目录折叠与画布字体：待 Figma 本地运行验证。
 
 ---

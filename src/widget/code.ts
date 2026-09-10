@@ -11,8 +11,6 @@ const { h, AutoLayout, Frame, Image, Rectangle, Span, Text, useSyncedState, useW
 
 const CONTENT_WIDTH = 720
 const CANVAS_NODE_BUDGET = 360
-const CANVAS_FONT_FAMILY = 'Noto Sans SC'
-const CANVAS_EMOJI_FONT_FAMILY = 'Noto Emoji'
 const WIDGET_SCHEMA_VERSION = 3
 const DOCUMENT_FILE_KEY_DATA = 'md-block-figma-file-key-v1'
 let suppressEditorOpenUntil = 0
@@ -90,66 +88,69 @@ async function handleFigmaNodeClick(nodeId: string): Promise<void> {
   await navigateToFigmaNode(nodeId)
 }
 
-function imageSize(asset: WidgetImageAsset, manualWidth?: number): { width: number; height: number } {
-  const sourceWidth = Math.max(asset.width, 1)
-  const sourceHeight = Math.max(asset.height, 1)
+function imageSize(sourceWidth: number, sourceHeight: number, manualWidth?: number): { width: number; height: number } {
+  const safeSourceWidth = Math.max(sourceWidth, 1)
+  const safeSourceHeight = Math.max(sourceHeight, 1)
   const width = manualWidth
     ? Math.max(120, Math.min(1600, Math.round(manualWidth)))
     : CONTENT_WIDTH
-  return { width, height: Math.max(80, Math.round((sourceHeight / sourceWidth) * width)) }
+  return { width, height: Math.max(80, Math.round((safeSourceHeight / safeSourceWidth) * width)) }
 }
 
-interface CanvasTextRun {
-  text: string
-  emoji: boolean
-}
-
-function splitCanvasTextRuns(text: string): CanvasTextRun[] {
-  const emojiPattern = /(?:[#*0-9]\uFE0F?\u20E3|[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F|\uFE0E)?(?:[\u{1F3FB}-\u{1F3FF}])?)(?:\u200D(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F|\uFE0E)?(?:[\u{1F3FB}-\u{1F3FF}])?))*/gu
-  const runs: CanvasTextRun[] = []
-  let cursor = 0
-  for (const match of text.matchAll(emojiPattern)) {
-    const offset = match.index ?? 0
-    if (offset > cursor) runs.push({ text: text.slice(cursor, offset), emoji: false })
-    runs.push({ text: match[0], emoji: true })
-    cursor = offset + match[0].length
+function embeddedImageDimensions(src: string): { width: number; height: number } | null {
+  const match = /^data:image\/(png|jpe?g|gif);base64,([A-Za-z0-9+/=]+)$/i.exec(src)
+  if (!match?.[1] || !match[2]) return null
+  try {
+    const bytes = figma.base64Decode(match[2])
+    const format = match[1].toLowerCase()
+    if (format === 'png' && bytes.length >= 24) {
+      const width = ((bytes[16] ?? 0) << 24) | ((bytes[17] ?? 0) << 16) | ((bytes[18] ?? 0) << 8) | (bytes[19] ?? 0)
+      const height = ((bytes[20] ?? 0) << 24) | ((bytes[21] ?? 0) << 16) | ((bytes[22] ?? 0) << 8) | (bytes[23] ?? 0)
+      return width > 0 && height > 0 ? { width: width >>> 0, height: height >>> 0 } : null
+    }
+    if (format === 'gif' && bytes.length >= 10) {
+      const width = (bytes[6] ?? 0) | ((bytes[7] ?? 0) << 8)
+      const height = (bytes[8] ?? 0) | ((bytes[9] ?? 0) << 8)
+      return width > 0 && height > 0 ? { width, height } : null
+    }
+    if ((format === 'jpg' || format === 'jpeg') && bytes.length >= 4) {
+      let offset = 2
+      while (offset + 8 < bytes.length) {
+        if (bytes[offset] !== 0xFF) {
+          offset += 1
+          continue
+        }
+        const marker = bytes[offset + 1] ?? 0
+        const segmentLength = ((bytes[offset + 2] ?? 0) << 8) | (bytes[offset + 3] ?? 0)
+        const isStartOfFrame = marker >= 0xC0 && marker <= 0xCF && ![0xC4, 0xC8, 0xCC].includes(marker)
+        if (isStartOfFrame && segmentLength >= 7) {
+          const height = ((bytes[offset + 5] ?? 0) << 8) | (bytes[offset + 6] ?? 0)
+          const width = ((bytes[offset + 7] ?? 0) << 8) | (bytes[offset + 8] ?? 0)
+          return width > 0 && height > 0 ? { width, height } : null
+        }
+        if (segmentLength < 2) break
+        offset += segmentLength + 2
+      }
+    }
+  } catch {
+    return null
   }
-  if (cursor < text.length) runs.push({ text: text.slice(cursor), emoji: false })
-  return runs.length > 0 ? runs : [{ text, emoji: false }]
-}
-
-function renderCanvasTextRuns(text: string, key: string) {
-  return splitCanvasTextRuns(text).map((run, index) =>
-    h(
-      Span,
-      {
-        key: `${key}-run-${index}`,
-        ...(run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
-      },
-      run.text,
-    ),
-  )
+  return null
 }
 
 function renderInline(segments: WidgetInlineSegment[], key: string) {
-  return segments.flatMap((segment, index) =>
-    splitCanvasTextRuns(segment.text).map((run, runIndex) =>
-      h(
-        Span,
-        segment.href
-          ? {
-              key: `${key}-${index}-${runIndex}`,
-              href: segment.href,
-              fill: '#2563EB',
-              textDecoration: 'underline',
-              ...(run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
-            }
-          : {
-              key: `${key}-${index}-${runIndex}`,
-              ...(run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
-            },
-        run.text,
-      ),
+  return segments.map((segment, index) =>
+    h(
+      Span,
+      segment.href
+        ? {
+            key: `${key}-${index}`,
+            href: segment.href,
+            fill: '#2563EB',
+            textDecoration: 'underline',
+          }
+        : { key: `${key}-${index}` },
+      segment.text,
     ),
   )
 }
@@ -164,7 +165,7 @@ function renderInlineText(
 ) {
   const internalNodeIds = segments.map((segment) => figmaNodeIdFromHref(segment.href))
   if (!internalNodeIds.some(Boolean)) {
-    return h(Text, { fontFamily: CANVAS_FONT_FAMILY, ...props, key }, renderInline(segments, key))
+    return h(Text, { ...props, key }, renderInline(segments, key))
   }
 
   const standaloneNodeId = segments.length === 1 ? internalNodeIds[0] : null
@@ -172,7 +173,6 @@ function renderInlineText(
     return h(
       Text,
       {
-        fontFamily: CANVAS_FONT_FAMILY,
         ...props,
         key,
         fill: '#2563EB',
@@ -181,7 +181,7 @@ function renderInlineText(
         tooltip: '跳转到对应画板或图层',
         hoverStyle: { fill: '#1D4ED8' },
       },
-      renderCanvasTextRuns(segments[0]?.text ?? ' ', `${key}-standalone`),
+      segments[0]?.text ?? ' ',
     )
   }
 
@@ -220,7 +220,6 @@ function renderInlineText(
       return h(
         Text,
         {
-          fontFamily: CANVAS_FONT_FAMILY,
           ...segmentProps,
           ...linkStyle,
           ...interaction,
@@ -228,7 +227,7 @@ function renderInlineText(
           width: 'hug-contents',
           maxWidth,
         },
-        renderCanvasTextRuns(segment.text, `${key}-${index}`),
+        segment.text,
       )
     }),
   )
@@ -364,7 +363,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         AutoLayout,
         { key, width: 'fill-parent', spacing: 8, verticalAlignItems: 'start' },
         [
-          h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: '155%', fill: '#737373' }, '•'),
+          h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: '155%', fill: '#737373' }, '•'),
           renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 24, fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 24),
         ],
       )
@@ -373,7 +372,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         AutoLayout,
         { key, width: 'fill-parent', spacing: 8, verticalAlignItems: 'start' },
         [
-          h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: '155%', fill: '#737373' }, `${block.order}.`),
+          h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: '155%', fill: '#737373' }, `${block.order}.`),
           renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 32, fontSize: 14, lineHeight: '155%', fill: '#262626' }, CONTENT_WIDTH - 32),
         ],
       )
@@ -407,7 +406,7 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
         h(
           Text,
           { width: CONTENT_WIDTH - 28, fontFamily: 'Roboto Mono', fontSize: 12, lineHeight: '155%', fill: '#262626' },
-          renderCanvasTextRuns(block.text, `${key}-code`),
+          block.text,
         ),
       )
     case 'divider':
@@ -429,31 +428,32 @@ function renderBlock(block: WidgetMarkdownBlock, index: number, assets: WidgetIm
     }
     case 'image': {
       const asset = assets.find((candidate) => candidate.id === block.assetId)
-      if (!asset) {
+      const src = asset?.dataUrl ?? block.src
+      const sourceDimensions = asset
+        ? { width: asset.width, height: asset.height }
+        : src
+          ? embeddedImageDimensions(src)
+          : null
+      if (!src || !sourceDimensions) {
         return h(
           AutoLayout,
           { key, width: 'fill-parent', padding: 12, fill: '#FAFAFA', cornerRadius: 6 },
-          h(Text, { fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: '#A3A3A3' }, `图片附件不可用：${block.alt}`),
+          h(Text, { fontSize: 12, fill: '#A3A3A3' }, `图片附件不可用：${block.alt}`),
         )
       }
-      const size = imageSize(asset, block.manualWidth)
+      const size = imageSize(sourceDimensions.width, sourceDimensions.height, block.manualWidth)
       return h(
         AutoLayout,
         { key, width: 'fill-parent', direction: 'vertical', spacing: 6, horizontalAlignItems: 'center' },
         [
           h(Image, {
             key: `${key}-image`,
-            src: {
-              type: 'image',
-              src: asset.dataUrl,
-              imageSize: { width: Math.max(asset.width, 1), height: Math.max(asset.height, 1) },
-              scaleMode: 'fit',
-            },
+            src,
             width: size.width,
             height: size.height,
             cornerRadius: 6,
           }),
-          h(Text, { key: `${key}-caption`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: '#737373' }, renderCanvasTextRuns(block.alt || asset.name, `${key}-caption`)),
+          h(Text, { key: `${key}-caption`, fontSize: 12, fill: '#737373' }, block.alt || asset?.name || '图片'),
         ],
       )
     }
@@ -684,16 +684,16 @@ function MarkdownBlockWidget() {
       onClick: openEditor,
     },
     [
-      h(Text, { key: 'document-title', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 700, lineHeight: '135%', fill: '#171717' }, renderCanvasTextRuns(title || '未命名', 'document-title')),
+      h(Text, { key: 'document-title', width: 'fill-parent', fontSize: 20, fontWeight: 700, lineHeight: '135%', fill: '#171717' }, title || '未命名'),
       h(Rectangle, { key: 'document-divider', width: 'fill-parent', height: 1, fill: '#E5E5E5' }),
       ...(visibleBlocks.length > 0
         ? renderedBlocks
-        : [h(Text, { key: 'empty-state', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, fill: '#A3A3A3' }, '暂无 Markdown 内容')]),
+        : [h(Text, { key: 'empty-state', width: 'fill-parent', fontSize: 14, fill: '#A3A3A3' }, '暂无 Markdown 内容')]),
       ...(truncated
         ? [
             h(
               Text,
-              { key: 'content-truncated', width: 'fill-parent', fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: '#737373' },
+              { key: 'content-truncated', width: 'fill-parent', fontSize: 12, fill: '#737373' },
               '内容较多，画布仅展示部分内容 · 点击打开完整文档',
             ),
           ]

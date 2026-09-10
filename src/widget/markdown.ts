@@ -14,7 +14,7 @@ export type WidgetMarkdownBlock =
   | { type: 'code'; text: string }
   | { type: 'divider' }
   | { type: 'spacer' }
-  | { type: 'image'; assetId: string; alt: string; manualWidth?: number }
+  | { type: 'image'; assetId?: string; src?: string; alt: string; manualWidth?: number }
   | {
       type: 'table'
       header: WidgetInlineSegment[][]
@@ -39,6 +39,20 @@ function cleanLinkHref(markdown: string): string {
     /^(https:\/\/(?:www\.)?figma\.com\/(?:design|file|proto|board)\/[A-Za-z0-9_-]+)(\?node-id=)/i,
     '$1/Figma$2',
   )
+}
+
+function parseStandaloneImage(markdown: string): {
+  alt: string
+  href: string
+  title: string
+} | null {
+  const match = /^\s*!\[([^\]]*)\]\(\s*((?:<[^>\n]+>)|(?:\\.|[^()\s]|\([^()\s]*\))+)(?:\s+(['"])(.*?)\3)?\s*\)\s*$/.exec(markdown)
+  if (!match?.[2]) return null
+  return {
+    alt: cleanInlineText(match[1] ?? ''),
+    href: cleanLinkHref(match[2]),
+    title: cleanInlineText(match[4] ?? ''),
+  }
 }
 
 export function parseInline(markdown: string): WidgetInlineSegment[] {
@@ -128,7 +142,7 @@ function isBlockStart(lines: string[], index: number): boolean {
     /^\s*>\s?/.test(line) ||
     /^\s*```/.test(line) ||
     /^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line) ||
-    /^\s*!\[[^\]]*\]\(figma-asset:\/\/[^)]+\)\s*$/.test(line)
+    parseStandaloneImage(line) !== null
   )
 }
 
@@ -157,15 +171,20 @@ export function parseWidgetMarkdown(markdown: string): WidgetMarkdownBlock[] {
       continue
     }
 
-    const image = /^\s*!\[([^\]]*)\]\(figma-asset:\/\/([^)\s]+)(?:\s+['"]([^'"]*)['"])?\)\s*$/.exec(line)
-    if (image?.[2]) {
-      const ratioOrAlt = image[1] || ''
+    const image = parseStandaloneImage(line)
+    if (image) {
+      const ratioOrAlt = image.alt
       const ratio = Number(ratioOrAlt)
+      const assetId = image.href.startsWith('figma-asset://')
+        ? image.href.slice('figma-asset://'.length)
+        : undefined
+      const embeddedSrc = image.href.startsWith('data:image/') ? image.href : undefined
       blocks.push({
         type: 'image',
-        alt: image[3] || (Number.isFinite(ratio) ? '图片' : ratioOrAlt || '图片'),
-        assetId: image[2],
-        manualWidth: Number.isFinite(ratio) && ratio < 0 ? Math.abs(ratio) : undefined,
+        alt: image.title || (Number.isFinite(ratio) ? '图片' : ratioOrAlt || '图片'),
+        assetId,
+        src: embeddedSrc,
+        manualWidth: Number.isFinite(ratio) && (ratio < 0 || ratio > 10) ? Math.abs(ratio) : undefined,
       })
       continue
     }

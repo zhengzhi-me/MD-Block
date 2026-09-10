@@ -44,6 +44,16 @@
       "$1/Figma$2"
     );
   }
+  function parseStandaloneImage(markdown) {
+    var _a, _b;
+    const match = /^\s*!\[([^\]]*)\]\(\s*((?:<[^>\n]+>)|(?:\\.|[^()\s]|\([^()\s]*\))+)(?:\s+(['"])(.*?)\3)?\s*\)\s*$/.exec(markdown);
+    if (!(match == null ? void 0 : match[2])) return null;
+    return {
+      alt: cleanInlineText((_a = match[1]) != null ? _a : ""),
+      href: cleanLinkHref(match[2]),
+      title: cleanInlineText((_b = match[4]) != null ? _b : "")
+    };
+  }
   function parseInline(markdown) {
     var _a, _b;
     if (isVisualBlank(markdown)) return [{ text: " " }];
@@ -113,7 +123,7 @@
   function isBlockStart(lines, index) {
     var _a;
     const line = (_a = lines[index]) != null ? _a : "";
-    return /^\s*$/.test(line) || isVisualBlank(line) || startsTable(lines, index) || /^#{1,6}\s+/.test(line) || /^\s*[-*+]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line) || /^\s*>\s?/.test(line) || /^\s*```/.test(line) || /^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line) || /^\s*!\[[^\]]*\]\(figma-asset:\/\/[^)]+\)\s*$/.test(line);
+    return /^\s*$/.test(line) || isVisualBlank(line) || startsTable(lines, index) || /^#{1,6}\s+/.test(line) || /^\s*[-*+]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line) || /^\s*>\s?/.test(line) || /^\s*```/.test(line) || /^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line) || parseStandaloneImage(line) !== null;
   }
   function parseWidgetMarkdown(markdown) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
@@ -136,15 +146,18 @@
         blocks.push({ type: "code", text: code.join("\n") || " " });
         continue;
       }
-      const image = /^\s*!\[([^\]]*)\]\(figma-asset:\/\/([^)\s]+)(?:\s+['"]([^'"]*)['"])?\)\s*$/.exec(line);
-      if (image == null ? void 0 : image[2]) {
-        const ratioOrAlt = image[1] || "";
+      const image = parseStandaloneImage(line);
+      if (image) {
+        const ratioOrAlt = image.alt;
         const ratio = Number(ratioOrAlt);
+        const assetId = image.href.startsWith("figma-asset://") ? image.href.slice("figma-asset://".length) : void 0;
+        const embeddedSrc = image.href.startsWith("data:image/") ? image.href : void 0;
         blocks.push({
           type: "image",
-          alt: image[3] || (Number.isFinite(ratio) ? "\u56FE\u7247" : ratioOrAlt || "\u56FE\u7247"),
-          assetId: image[2],
-          manualWidth: Number.isFinite(ratio) && ratio < 0 ? Math.abs(ratio) : void 0
+          alt: image.title || (Number.isFinite(ratio) ? "\u56FE\u7247" : ratioOrAlt || "\u56FE\u7247"),
+          assetId,
+          src: embeddedSrc,
+          manualWidth: Number.isFinite(ratio) && (ratio < 0 || ratio > 10) ? Math.abs(ratio) : void 0
         });
         continue;
       }
@@ -210,8 +223,6 @@
   var { h, AutoLayout, Frame, Image, Rectangle, Span, Text, useSyncedState, useWidgetNodeId } = widget;
   var CONTENT_WIDTH = 720;
   var CANVAS_NODE_BUDGET = 360;
-  var CANVAS_FONT_FAMILY = "Noto Sans SC";
-  var CANVAS_EMOJI_FONT_FAMILY = "Noto Emoji";
   var WIDGET_SCHEMA_VERSION = 3;
   var DOCUMENT_FILE_KEY_DATA = "md-block-figma-file-key-v1";
   var suppressEditorOpenUntil = 0;
@@ -278,52 +289,64 @@
     }
     await navigateToFigmaNode(nodeId);
   }
-  function imageSize(asset, manualWidth) {
-    const sourceWidth = Math.max(asset.width, 1);
-    const sourceHeight = Math.max(asset.height, 1);
+  function imageSize(sourceWidth, sourceHeight, manualWidth) {
+    const safeSourceWidth = Math.max(sourceWidth, 1);
+    const safeSourceHeight = Math.max(sourceHeight, 1);
     const width = manualWidth ? Math.max(120, Math.min(1600, Math.round(manualWidth))) : CONTENT_WIDTH;
-    return { width, height: Math.max(80, Math.round(sourceHeight / sourceWidth * width)) };
+    return { width, height: Math.max(80, Math.round(safeSourceHeight / safeSourceWidth * width)) };
   }
-  function splitCanvasTextRuns(text) {
-    var _a;
-    const emojiPattern = /(?:[#*0-9]\uFE0F?\u20E3|[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F|\uFE0E)?(?:[\u{1F3FB}-\u{1F3FF}])?)(?:\u200D(?:[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}](?:\uFE0F|\uFE0E)?(?:[\u{1F3FB}-\u{1F3FF}])?))*/gu;
-    const runs = [];
-    let cursor = 0;
-    for (const match of text.matchAll(emojiPattern)) {
-      const offset = (_a = match.index) != null ? _a : 0;
-      if (offset > cursor) runs.push({ text: text.slice(cursor, offset), emoji: false });
-      runs.push({ text: match[0], emoji: true });
-      cursor = offset + match[0].length;
+  function embeddedImageDimensions(src) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s;
+    const match = /^data:image\/(png|jpe?g|gif);base64,([A-Za-z0-9+/=]+)$/i.exec(src);
+    if (!(match == null ? void 0 : match[1]) || !match[2]) return null;
+    try {
+      const bytes = figma.base64Decode(match[2]);
+      const format = match[1].toLowerCase();
+      if (format === "png" && bytes.length >= 24) {
+        const width = ((_a = bytes[16]) != null ? _a : 0) << 24 | ((_b = bytes[17]) != null ? _b : 0) << 16 | ((_c = bytes[18]) != null ? _c : 0) << 8 | ((_d = bytes[19]) != null ? _d : 0);
+        const height = ((_e = bytes[20]) != null ? _e : 0) << 24 | ((_f = bytes[21]) != null ? _f : 0) << 16 | ((_g = bytes[22]) != null ? _g : 0) << 8 | ((_h = bytes[23]) != null ? _h : 0);
+        return width > 0 && height > 0 ? { width: width >>> 0, height: height >>> 0 } : null;
+      }
+      if (format === "gif" && bytes.length >= 10) {
+        const width = ((_i = bytes[6]) != null ? _i : 0) | ((_j = bytes[7]) != null ? _j : 0) << 8;
+        const height = ((_k = bytes[8]) != null ? _k : 0) | ((_l = bytes[9]) != null ? _l : 0) << 8;
+        return width > 0 && height > 0 ? { width, height } : null;
+      }
+      if ((format === "jpg" || format === "jpeg") && bytes.length >= 4) {
+        let offset = 2;
+        while (offset + 8 < bytes.length) {
+          if (bytes[offset] !== 255) {
+            offset += 1;
+            continue;
+          }
+          const marker = (_m = bytes[offset + 1]) != null ? _m : 0;
+          const segmentLength = ((_n = bytes[offset + 2]) != null ? _n : 0) << 8 | ((_o = bytes[offset + 3]) != null ? _o : 0);
+          const isStartOfFrame = marker >= 192 && marker <= 207 && ![196, 200, 204].includes(marker);
+          if (isStartOfFrame && segmentLength >= 7) {
+            const height = ((_p = bytes[offset + 5]) != null ? _p : 0) << 8 | ((_q = bytes[offset + 6]) != null ? _q : 0);
+            const width = ((_r = bytes[offset + 7]) != null ? _r : 0) << 8 | ((_s = bytes[offset + 8]) != null ? _s : 0);
+            return width > 0 && height > 0 ? { width, height } : null;
+          }
+          if (segmentLength < 2) break;
+          offset += segmentLength + 2;
+        }
+      }
+    } catch (e) {
+      return null;
     }
-    if (cursor < text.length) runs.push({ text: text.slice(cursor), emoji: false });
-    return runs.length > 0 ? runs : [{ text, emoji: false }];
-  }
-  function renderCanvasTextRuns(text, key) {
-    return splitCanvasTextRuns(text).map(
-      (run, index) => h(
-        Span,
-        __spreadValues({
-          key: `${key}-run-${index}`
-        }, run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
-        run.text
-      )
-    );
+    return null;
   }
   function renderInline(segments, key) {
-    return segments.flatMap(
-      (segment, index) => splitCanvasTextRuns(segment.text).map(
-        (run, runIndex) => h(
-          Span,
-          segment.href ? __spreadValues({
-            key: `${key}-${index}-${runIndex}`,
-            href: segment.href,
-            fill: "#2563EB",
-            textDecoration: "underline"
-          }, run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}) : __spreadValues({
-            key: `${key}-${index}-${runIndex}`
-          }, run.emoji ? { fontFamily: CANVAS_EMOJI_FONT_FAMILY } : {}),
-          run.text
-        )
+    return segments.map(
+      (segment, index) => h(
+        Span,
+        segment.href ? {
+          key: `${key}-${index}`,
+          href: segment.href,
+          fill: "#2563EB",
+          textDecoration: "underline"
+        } : { key: `${key}-${index}` },
+        segment.text
       )
     );
   }
@@ -331,15 +354,13 @@
     var _a, _b;
     const internalNodeIds = segments.map((segment) => figmaNodeIdFromHref(segment.href));
     if (!internalNodeIds.some(Boolean)) {
-      return h(Text, __spreadProps(__spreadValues({ fontFamily: CANVAS_FONT_FAMILY }, props), { key }), renderInline(segments, key));
+      return h(Text, __spreadProps(__spreadValues({}, props), { key }), renderInline(segments, key));
     }
     const standaloneNodeId = segments.length === 1 ? internalNodeIds[0] : null;
     if (standaloneNodeId) {
       return h(
         Text,
-        __spreadProps(__spreadValues({
-          fontFamily: CANVAS_FONT_FAMILY
-        }, props), {
+        __spreadProps(__spreadValues({}, props), {
           key,
           fill: "#2563EB",
           textDecoration: "underline",
@@ -347,7 +368,7 @@
           tooltip: "\u8DF3\u8F6C\u5230\u5BF9\u5E94\u753B\u677F\u6216\u56FE\u5C42",
           hoverStyle: { fill: "#1D4ED8" }
         }),
-        renderCanvasTextRuns((_b = (_a = segments[0]) == null ? void 0 : _a.text) != null ? _b : " ", `${key}-standalone`)
+        (_b = (_a = segments[0]) == null ? void 0 : _a.text) != null ? _b : " "
       );
     }
     const _c = props, { width, key: _ignoredKey } = _c, segmentProps = __objRest(_c, ["width", "key"]);
@@ -374,14 +395,12 @@
         } : segment.href ? { href: segment.href } : {};
         return h(
           Text,
-          __spreadProps(__spreadValues(__spreadValues(__spreadValues({
-            fontFamily: CANVAS_FONT_FAMILY
-          }, segmentProps), linkStyle), interaction), {
+          __spreadProps(__spreadValues(__spreadValues(__spreadValues({}, segmentProps), linkStyle), interaction), {
             key: `${key}-${index}`,
             width: "hug-contents",
             maxWidth
           }),
-          renderCanvasTextRuns(segment.text, `${key}-${index}`)
+          segment.text
         );
       })
     );
@@ -489,7 +508,7 @@
     return { visible, truncated: truncated || visible.length < blocks.length };
   }
   function renderBlock(block, index, assets) {
-    var _a;
+    var _a, _b;
     const key = `block-${index}`;
     switch (block.type) {
       case "heading": {
@@ -513,7 +532,7 @@
           AutoLayout,
           { key, width: "fill-parent", spacing: 8, verticalAlignItems: "start" },
           [
-            h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: "155%", fill: "#737373" }, "\u2022"),
+            h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: "155%", fill: "#737373" }, "\u2022"),
             renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 24, fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 24)
           ]
         );
@@ -522,7 +541,7 @@
           AutoLayout,
           { key, width: "fill-parent", spacing: 8, verticalAlignItems: "start" },
           [
-            h(Text, { key: `${key}-marker`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, lineHeight: "155%", fill: "#737373" }, `${block.order}.`),
+            h(Text, { key: `${key}-marker`, fontSize: 14, lineHeight: "155%", fill: "#737373" }, `${block.order}.`),
             renderInlineText(block.inline, `${key}-text`, { width: CONTENT_WIDTH - 32, fontSize: 14, lineHeight: "155%", fill: "#262626" }, CONTENT_WIDTH - 32)
           ]
         );
@@ -556,7 +575,7 @@
           h(
             Text,
             { width: CONTENT_WIDTH - 28, fontFamily: "Roboto Mono", fontSize: 12, lineHeight: "155%", fill: "#262626" },
-            renderCanvasTextRuns(block.text, `${key}-code`)
+            block.text
           )
         );
       case "divider":
@@ -578,31 +597,28 @@
       }
       case "image": {
         const asset = assets.find((candidate) => candidate.id === block.assetId);
-        if (!asset) {
+        const src = (_b = asset == null ? void 0 : asset.dataUrl) != null ? _b : block.src;
+        const sourceDimensions = asset ? { width: asset.width, height: asset.height } : src ? embeddedImageDimensions(src) : null;
+        if (!src || !sourceDimensions) {
           return h(
             AutoLayout,
             { key, width: "fill-parent", padding: 12, fill: "#FAFAFA", cornerRadius: 6 },
-            h(Text, { fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#A3A3A3" }, `\u56FE\u7247\u9644\u4EF6\u4E0D\u53EF\u7528\uFF1A${block.alt}`)
+            h(Text, { fontSize: 12, fill: "#A3A3A3" }, `\u56FE\u7247\u9644\u4EF6\u4E0D\u53EF\u7528\uFF1A${block.alt}`)
           );
         }
-        const size = imageSize(asset, block.manualWidth);
+        const size = imageSize(sourceDimensions.width, sourceDimensions.height, block.manualWidth);
         return h(
           AutoLayout,
           { key, width: "fill-parent", direction: "vertical", spacing: 6, horizontalAlignItems: "center" },
           [
             h(Image, {
               key: `${key}-image`,
-              src: {
-                type: "image",
-                src: asset.dataUrl,
-                imageSize: { width: Math.max(asset.width, 1), height: Math.max(asset.height, 1) },
-                scaleMode: "fit"
-              },
+              src,
               width: size.width,
               height: size.height,
               cornerRadius: 6
             }),
-            h(Text, { key: `${key}-caption`, fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#737373" }, renderCanvasTextRuns(block.alt || asset.name, `${key}-caption`))
+            h(Text, { key: `${key}-caption`, fontSize: 12, fill: "#737373" }, block.alt || (asset == null ? void 0 : asset.name) || "\u56FE\u7247")
           ]
         );
       }
@@ -813,13 +829,13 @@
         onClick: openEditor
       },
       [
-        h(Text, { key: "document-title", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 20, fontWeight: 700, lineHeight: "135%", fill: "#171717" }, renderCanvasTextRuns(title || "\u672A\u547D\u540D", "document-title")),
+        h(Text, { key: "document-title", width: "fill-parent", fontSize: 20, fontWeight: 700, lineHeight: "135%", fill: "#171717" }, title || "\u672A\u547D\u540D"),
         h(Rectangle, { key: "document-divider", width: "fill-parent", height: 1, fill: "#E5E5E5" }),
-        ...visibleBlocks.length > 0 ? renderedBlocks : [h(Text, { key: "empty-state", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 14, fill: "#A3A3A3" }, "\u6682\u65E0 Markdown \u5185\u5BB9")],
+        ...visibleBlocks.length > 0 ? renderedBlocks : [h(Text, { key: "empty-state", width: "fill-parent", fontSize: 14, fill: "#A3A3A3" }, "\u6682\u65E0 Markdown \u5185\u5BB9")],
         ...truncated ? [
           h(
             Text,
-            { key: "content-truncated", width: "fill-parent", fontFamily: CANVAS_FONT_FAMILY, fontSize: 12, fill: "#737373" },
+            { key: "content-truncated", width: "fill-parent", fontSize: 12, fill: "#737373" },
             "\u5185\u5BB9\u8F83\u591A\uFF0C\u753B\u5E03\u4EC5\u5C55\u793A\u90E8\u5206\u5185\u5BB9 \xB7 \u70B9\u51FB\u6253\u5F00\u5B8C\u6574\u6587\u6863"
           )
         ] : []
