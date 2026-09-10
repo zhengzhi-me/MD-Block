@@ -93,7 +93,7 @@ CHANGELOG.md         # 版本记录、兼容性与验证状态
 
 ## 版本记录
 
-当前公开版本为 **V0.2.2**，仓库开发版本为 **V0.2.3（待发布）**。完整功能变化、数据兼容和验证结果请查看 [CHANGELOG.md](./CHANGELOG.md)。
+当前公开版本为 **V0.2.3**，已发布至 [Figma Community](https://www.figma.com/community/widget/1671425799803301634)。完整功能变化、数据兼容和验证结果请查看 [CHANGELOG.md](./CHANGELOG.md)。
 
 ## 参与贡献
 

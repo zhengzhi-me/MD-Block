@@ -14,8 +14,9 @@
 
 ## V0.2.3
 
-- 日期：2026-09-09
-- 发布状态：待发布
+- 发布日期：2026-09-10
+- 发布状态：已发布至 Figma Community
+- 发布地址：https://www.figma.com/community/widget/1671425799803301634
 - 类型：编辑窗口与中文排版优化
 
 ### 编辑窗口
@@ -55,6 +56,13 @@
 - 连续引用、代码块、表格画布布局与空列表退格：通过类型检查和构建，待 Figma 本地运行验证。
 - 新旧图片语法解析、Image Data URI 渲染和默认字体回退：通过类型检查、构建与 Widget 虚拟树回归，待 Figma 本地运行验证。
 - 默认窗口尺寸、目录折叠与画布字体：待 Figma 本地运行验证。
+- 画布恢复 Figma 默认字体：用户本地验证通过。
+- Figma Community V0.2.3 发布：用户确认完成。
+
+### 已知限制
+
+- Widget API 不能可靠指定 macOS 的 PingFang SC 或 Windows 的 Microsoft YaHei；画布采用 Figma 默认字体与系统字形回退，不同平台的中文字形可能略有差异。
+- 画布图片优先支持随文档保存的 `figma-asset://` 附件及旧版内嵌 Data URI；任意外部图片 URL 不在当前无网络权限的 Widget 展示范围内。
 
 ---
 
